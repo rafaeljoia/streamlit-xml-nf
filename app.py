@@ -14,39 +14,34 @@ st.set_page_config(layout="wide", page_title="Processador XML Fiscal")
 
 # --- Definição das Páginas --- 
 def page_extract_tags():
-    st.title("🔎 Ferramenta de Extração de Dados XML (com Filtro Opcional)")
-    st.markdown("""
-    Carregue arquivos XML, extraia valores de uma tag específica e, opcionalmente,
-    filtre os resultados com base no valor de outra tag dentro de um mesmo elemento ancestral comum.
-    """)
-
-    # --- Upload de Arquivos ---
-    st.header("1. Carregue seus arquivos XML")
+    st.title("🔎 Buscador de Dados XML")
+  
+    st.header("1. Carregue os arquivos XML")
     uploaded_files = st.file_uploader(
         "Selecione um ou mais arquivos XML para extração",
         type=["xml"],
         accept_multiple_files=True,
         key="uploader_extracao", # Chave única para este uploader
-        help="Você pode selecionar múltiplos arquivos. O limite de upload está ajustado para arquivos grandes."
+        help="Você pode selecionar múltiplos arquivos, o limite por arquivo está indicado."
     )
 
     # --- Input da Tag Alvo ---
-    st.header("2. Informe a Tag Alvo")
+    st.header("2. Informe a Tag de Busca")
     tag_name = st.text_input(
-        "Nome da Tag Alvo",
+        "Nome da Tag de Busca",
         placeholder="Ex: nNF, dhEmi, CNPJ",
         key="tag_alvo_extracao",
-        help="Digite o nome exato da tag XML cujo valor você deseja extrair (sem < >)."
+        help="Informe o nome exato da tag XML cujo valor você deseja extrair (sem < >)."
     )
 
     # --- Filtro Opcional ---
-    st.header("3. Filtro (Opcional)")
-    st.markdown("Preencha os campos abaixo *apenas* se desejar extrair a Tag Alvo condicionalmente.")
+    st.header("3. Filtro - Opcional")
+    st.markdown("Preencha os campos abaixo *apenas* se desejar extrair a Tag de Busca condicionalmente.")
     
     col1, col2, col3 = st.columns(3)
     with col1:
         parent_tag = st.text_input(
-            "Tag Ancestral Comum (Contexto)",
+            "Tag Pai (Contexto)",
             placeholder="Ex: infNFCom, ide, emit",
             key="parent_tag_extracao",
             help="Tag ancestral comum que contém *tanto* a tag de filtro quanto a tag alvo (mesmo que em níveis diferentes). Ex: infNFCom, registro. Deixe em branco se não for filtrar."
@@ -70,9 +65,9 @@ def page_extract_tags():
     st.header("4. Processe e veja os resultados")
     if st.button("Extrair Dados", type="primary", key="btn_extracao"):
         if not uploaded_files:
-            st.error("Por favor, carregue pelo menos um arquivo XML.")
+            st.error("Carregue pelo menos um arquivo XML.")
         elif not tag_name:
-            st.error("Por favor, informe o nome da Tag Alvo.")
+            st.error("Informe o nome da Tag de Busca.")
         else:
             is_filtering = bool(parent_tag and filter_tag and filter_value)
             filter_info_for_spinner = f" com filtro `{filter_tag}`=`{filter_value}` no contexto `{parent_tag}`" if is_filtering else ""
@@ -98,16 +93,37 @@ def page_extract_tags():
                     output = io.StringIO()
                     df.to_csv(output, index=False, encoding="utf-8")
                     return output.getvalue()
+                
+
+                @st.cache_data
+                def convert_df_to_excel(df):
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name='Sheet1')
+                    data = output.getvalue()
+                    return data
 
                 csv_data = convert_df_to_csv(df_results)
                 csv_filename = f"extracao_{tag_name}_filtrado.csv" if is_filtering else f"extracao_{tag_name}.csv"
                 st.download_button(
-                    label="Baixar resultados como CSV",
+                    label="Baixar resultados em  CSV",
                     data=csv_data,
                     file_name=csv_filename,
                     mime="text/csv",
                     key="download_csv_extracao"
                 )
+
+                excel_data = convert_df_to_excel(df_results)
+                excel_filename = f"extracao_{tag_name}_filtrado.xlsx" if is_filtering else f"extracao_{tag_name}.xlsx"
+                st.download_button(
+                    label="Baixar resultados em Excel",
+                    data=excel_data,
+                    file_name=excel_filename,
+                    key="download_excel_extracao",
+                    mime='application/vnd.ms-excel'
+                )
+
+
             else:
                 st.warning("Nenhum resultado encontrado ou ocorreu um erro. Verifique os arquivos, a tag e os critérios de filtro.")
 
@@ -144,7 +160,7 @@ def page_consolidate_faturas():
             "Número do Lote",
             placeholder="Ex: 0000000430",
             key="lote_consolidacao",
-            help="Digite o número que será usado no atributo NUMERO_LOTE do arquivo consolidado."
+            help="O NUMERO_LOTE do lote serve pra dar nome ao arquivo consolidado."
         )
 
     # --- Botão de Processamento e Download ---
@@ -187,7 +203,7 @@ def page_consolidate_faturas():
 
 # --- Navegação Principal (Sidebar) ---
 st.sidebar.title("Menu de Ferramentas")
-page = st.sidebar.radio("Escolha a ferramenta:", ("Extrair Tags", "Consolidar Faturas por UF"))
+page = st.sidebar.radio("Escolha a ferramenta:", ("Buscador de Tags", "Consolidar Faturas por UF"))
 
 st.sidebar.markdown("--- ")
 st.sidebar.caption("Desenvolvido com Python e Streamlit.")
