@@ -14,8 +14,12 @@ st.set_page_config(layout="wide", page_title="Processador XML Fiscal")
 
 # --- Definição das Páginas --- 
 def page_extract_tags():
-    st.title("🔎 Buscador de Dados XML")
-  
+    st.title("🔎 Buscador de Dados XML)")
+    st.markdown("""
+    Busca de  arquivos XML, extraia valores de uma tag específica e, opcionalmente,
+    filtre os resultados com base no valor de outra tag dentro de um mesmo elemento ancestral comum.
+    """)
+
     # --- Upload de Arquivos ---
     st.header("1. Carregue seus arquivos XML")
     uploaded_files = st.file_uploader(
