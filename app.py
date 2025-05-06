@@ -14,42 +14,41 @@ st.set_page_config(layout="wide", page_title="Processador XML Fiscal")
 
 # --- Definição das Páginas --- 
 def page_extract_tags():
-    st.title("🔎 Buscador de Dados XML)")
+    st.title("🔎 Buscador de Dados em XML")
     st.markdown("""
-    Busca de  arquivos XML, extraia valores de uma tag específica e, opcionalmente,
-    filtre os resultados com base no valor de outra tag dentro de um mesmo elemento ancestral comum.
+    Busca de tags em arquivos XML com filtro
     """)
 
     # --- Upload de Arquivos ---
-    st.header("1. Carregue seus arquivos XML")
+    st.header("1. Carregue arquivos XML")
     uploaded_files = st.file_uploader(
         "Selecione um ou mais arquivos XML para extração",
         type=["xml"],
         accept_multiple_files=True,
         key="uploader_extracao", # Chave única para este uploader
-        help="Você pode selecionar múltiplos arquivos. O limite de upload está ajustado para arquivos grandes."
+        help="Você pode selecionar múltiplos arquivos. O limite por arquivo está indicado na caixa de upload."
     )
 
     # --- Input da Tag Alvo ---
-    st.header("2. Informe a Tag Alvo")
+    st.header("2. Tag de Busca")
     tag_name = st.text_input(
-        "Nome da Tag Alvo",
+        "Nome da Tag de Busca",
         placeholder="Ex: nNF, dhEmi, CNPJ",
         key="tag_alvo_extracao",
-        help="Digite o nome exato da tag XML cujo valor você deseja extrair (sem < >)."
+        help="Digite o nome exato da tag XML."
     )
 
     # --- Filtro Opcional ---
     st.header("3. Filtro (Opcional)")
-    st.markdown("Preencha os campos abaixo *apenas* se desejar extrair a Tag Alvo condicionalmente.")
+    st.markdown("Preencha os campos abaixo *apenas* se desejar filtrar condicionalmente a tag de busca.")
     
     col1, col2, col3 = st.columns(3)
     with col1:
         parent_tag = st.text_input(
-            "Tag Ancestral Comum (Contexto)",
+            "Tag Pai",
             placeholder="Ex: infNFCom, ide, emit",
             key="parent_tag_extracao",
-            help="Tag ancestral comum que contém *tanto* a tag de filtro quanto a tag alvo (mesmo que em níveis diferentes). Ex: infNFCom, registro. Deixe em branco se não for filtrar."
+            help="Tag pai comum que contém *tanto* a tag de filtro quanto a tag busca (mesmo que em níveis diferentes). Ex: infNFCom, registro. Deixe em branco se não for filtrar."
         )
     with col2:
         filter_tag = st.text_input(
@@ -67,7 +66,7 @@ def page_extract_tags():
         )
 
     # --- Botão de Processamento e Resultados ---
-    st.header("4. Processe e veja os resultados")
+    st.header("4. Clique abaixo para Processar")
     if st.button("Extrair Dados", type="primary", key="btn_extracao"):
         if not uploaded_files:
             st.error("Por favor, carregue pelo menos um arquivo XML.")
