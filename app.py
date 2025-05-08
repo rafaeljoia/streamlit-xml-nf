@@ -16,32 +16,6 @@ from xml_parser import (
 import io
 import datetime
 
-st.html(
-    body="""
-        <style>
-            /* hide hyperlink anchors generated next to headers */
-            h1 > div > a {
-                display: none !important;
-            }
-            h2 > div > a {
-                display: none !important;
-            }
-            h3 > div > a {
-                display: none !important;
-            }
-            h4 > div > a {
-                display: none !important;
-            }
-            h5 > div > a {
-                display: none !important;
-            }
-            h6 > div > a {
-                display: none !important;
-            }
-        </style>
-    """,
-)
-
 st.set_page_config(
     layout="wide", page_title="Buscador XML Fiscal", page_icon="🔍", menu_items={}
 )
