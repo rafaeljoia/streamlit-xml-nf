@@ -389,7 +389,7 @@ def page_guide():
 with st.sidebar:
     selected = option_menu(
         "Menu",
-        options=["🔍Buscar Tags", "📝Guia de Uso"],
+        options=["Buscar Tags", "Guia de Uso"],
         icons=["search", "book"],
         menu_icon="cast",
         default_index=0,
@@ -399,9 +399,9 @@ st.sidebar.markdown("--- ")
 # st.sidebar.caption("Desenvolvido com Python e Streamlit.")
 
 # --- Executa a página selecionada ---
-if selected == "🔍Buscar Tags":
+if selected == "Buscar Tags":
     page_extract_tags()
-elif selected == "📝Guia de Uso":
+elif selected == "Guia de Uso":
     page_guide()
 # elif page == "Consolidar Faturas por UF":
 # page_consolidate_faturas()
