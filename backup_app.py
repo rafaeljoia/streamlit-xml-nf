@@ -5,20 +5,16 @@
 """
 
 import streamlit as st
-from streamlit_option_menu import option_menu
 import pandas as pd
 from xml_parser import (
     consolidate_faturas_by_result,
-    format_uf,
     process_files,
     consolidate_faturas_by_uf,
 )  # Importa ambas as funções
 import io
 import datetime
 
-st.set_page_config(
-    layout="wide", page_title="Buscador XML Fiscal", page_icon="🔍", menu_items={}
-)
+st.set_page_config(layout="wide", page_title="Processador XML Fiscal")
 
 for key in [
     "parent_tag_extracao",
@@ -68,20 +64,20 @@ def page_extract_tags():
     # --- Filtro Opcional ---
     st.header("3. Filtro (Opcional)")
     st.markdown(
-        "Preencha os campos abaixo *apenas* se desejar extrair a Tag de Busca condicionalmente. Caso contrário, a busca será ampla em todos os nós do XML."
+        "Preencha os campos abaixo *apenas* se desejar extrair a Tag Alvo condicionalmente."
     )
 
     col1, col2 = st.columns(2)
     with col1:
         parent_tag = st.text_input(
-            "Tag Contexto (PAI)",
-            placeholder="Ex: enderDest",
+            "Tag Contexto",
+            placeholder="Ex: infNFCom, ide, emit",
             key="parent_tag_extracao",
             help="Tag ancestral comum que contém *tanto* a tag de filtro quanto a tag alvo. Ex: infNFCom, NFe. Deixe em branco se não for filtrar.",
         )
     with col2:
         filter_parent_path_input = st.text_input(
-            "Tag Contexto (FILHO) - opcional, relativo a tag contexto pai",
+            "Tag Pai do Filtro (opcional, relativo a tag contexto)",
             placeholder="Ex: dest, ide/total",
             key="filter_parent_path_extracao",
             help="Caminho para o nó que contém a Tag de Filtro, relativo à Tag Contexto. Ex: se Ancestral é 'infNFCom' e quer filtrar por 'dest/xNome', digite 'dest' aqui e 'xNome' em 'Tag de Filtro'. Deixe em branco se a Tag de Filtro estiver diretamente sob o Ancestral ou para busca ampla.",
@@ -91,14 +87,14 @@ def page_extract_tags():
     with col_filter_tag:
         filter_tag = st.text_input(
             "Tag de Filtro",
-            placeholder="Ex: UF",
+            placeholder="Ex: cUF, xNome, tpAmb",
             key="filter_tag_extracao",
             help="Tag usada como condição para o filtro. Deixe em branco se não for filtrar.",
         )
     with col_filter_value:
         filter_value = st.text_input(
             "Valor do Filtro",
-            placeholder="Ex: SP",
+            placeholder="Ex: 31, CLUBE DE CAMPO, 1",
             key="filter_value_extracao",
             help="Valor que a Tag de Filtro deve ter. Deixe em branco se não for filtrar.",
         )
@@ -126,8 +122,6 @@ def page_extract_tags():
                 filter_info_parts.append(
                     f"Caminho Filtro: `{filter_parent_path_input}`"
                 )
-            # filter_parent_path_input = None
-
             if filter_value:
                 filter_info_parts.append(f"Valor Filtro: `{filter_value}`")
             filter_info_for_spinner = (
@@ -158,10 +152,6 @@ def page_extract_tags():
             if results_list:
                 st.success("Processamento concluído!")
                 df_results = pd.DataFrame(results_list)
-
-                if tag_name == "cUF":
-                    df_results["Valor"] = df_results["Valor"].apply(format_uf)
-
                 # Reordenar colunas para melhor visualização, garantindo que todas as chaves existam
                 cols_to_show = [
                     "Nome do Arquivo",
@@ -170,7 +160,6 @@ def page_extract_tags():
                     "Valor",
                     "Ocorrência",
                 ]
-
                 df_results_display = pd.DataFrame(columns=cols_to_show)
                 for col in cols_to_show:
                     if col in df_results.columns:
@@ -180,13 +169,7 @@ def page_extract_tags():
                             None  # ou pd.NA ou outra forma de lidar com colunas ausentes
                         )
 
-                df_results_display.index = df_results_display.index + 1
                 st.dataframe(df_results_display, use_container_width=True)
-
-                total_ocorrencia = df_results["Ocorrência"].sum()
-
-                # Exibir total no final com destaque
-                st.markdown(f"**TOTAL de Ocorrências: {total_ocorrencia}**")
 
                 st.subheader("Download dos Resultados")
 
@@ -249,7 +232,7 @@ def page_extract_tags():
             "Consolidar Faturas", type="primary", key="btn_consolidacao"
         )
         if consolidar:
-            numero_lote = datetime.datetime.now().strftime("%d%m%Y_%H%M%S")
+            numero_lote = datetime.datetime.now().strftime("%d%m%Y-%H%M%S")
             with st.spinner("Consolidando em XML..."):
                 consolidated_xml_str, fatura_count = consolidate_faturas_by_result(
                     files=st.session_state["uploaded_files"],
@@ -374,34 +357,17 @@ def page_consolidate_faturas():
                 )
 
 
-def page_guide():
-    st.title("📝Guia de Uso")
-    st.markdown("#### - Obter a quantidade de UF presentes nos arquivos")
-    st.markdown(
-        "Utilize o filtro `cUF` para obter a quantidade de UFs presentes nos arquivos XML."
-    )
-    st.markdown("Exemplo:")
-
-    st.image("img/filtro_cUF.jpg", caption="Filtro cUF")
-
-
 # --- Navegação Principal (Sidebar) ---
-with st.sidebar:
-    selected = option_menu(
-        "Menu",
-        options=["🔍Buscar Tags", "📝Guia de Uso"],
-        icons=["search", "book"],
-        menu_icon="cast",
-        default_index=0,
-    )
+st.sidebar.title("Menu")
+page = st.sidebar.radio(
+    "Escolha a ferramenta:", ("Extrair Tags")  # "Consolidar Faturas por UF")
+)
 
 st.sidebar.markdown("--- ")
 # st.sidebar.caption("Desenvolvido com Python e Streamlit.")
 
 # --- Executa a página selecionada ---
-if selected == "🔍Buscar Tags":
+if page == "Extrair Tags":
     page_extract_tags()
-elif selected == "📝Guia de Uso":
-    page_guide()
 # elif page == "Consolidar Faturas por UF":
 # page_consolidate_faturas()

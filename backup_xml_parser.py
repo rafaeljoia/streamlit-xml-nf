@@ -49,7 +49,7 @@ def extract_filtered_tag_data(
     target_values_counter = Counter()
     try:
         context = etree.iterparse(
-            xml_source, events=("end",), tag="Fatura", recover=True
+            xml_source, events=("end",), tag=common_ancestor_tag, recover=True
         )
         for event, ancestor_elem in context:
             filter_match = False
@@ -68,13 +68,12 @@ def extract_filtered_tag_data(
 
             # Busca o elemento de filtro usando o XPath construído (relativo ao ancestor_elem)
             # O ponto no início do XPath (./) o torna relativo ao nó atual (ancestor_elem)
-            fatura_element = ancestor_elem.find(".//" + common_ancestor_tag)
-            filter_elements = fatura_element.xpath(f"./{xpath_filter_tag}")
+            filter_elements = ancestor_elem.xpath(f"./{xpath_filter_tag}")
 
             if not filter_elements and not filter_parent_path:
                 # Fallback para a lógica original se filter_parent_path não foi fornecido e a busca direta falhou
                 # (ou se o usuário quer buscar em qualquer nível abaixo do ancestral sem especificar caminho)
-                filter_elements = fatura_element.xpath(f".//{filter_tag}")
+                filter_elements = ancestor_elem.xpath(f".//{filter_tag}")
 
             for (
                 filter_elem_item
@@ -86,8 +85,7 @@ def extract_filtered_tag_data(
                     filter_match = True
                     break  # Encontrou um match, não precisa checar outros
 
-            if filter_match and target_tag == "nNF":
-
+            if filter_match:
                 # Busca a tag alvo em qualquer nível abaixo do ancestral comum
                 target_elements = ancestor_elem.xpath(f".//{target_tag}")
                 if target_elements and target_elements[0].text:
@@ -98,20 +96,9 @@ def extract_filtered_tag_data(
                     )
                 target_values_counter[target_value_found_in_context] += 1
 
-            if filter_match:
-                # Busca a tag alvo em qualquer nível abaixo do ancestral comum
-                target_elements = fatura_element.xpath(f".//{target_tag}")
-                if target_elements and target_elements[0].text:
-                    target_value_found_in_context = target_elements[0].text.strip()
-                else:
-                    target_value_found_in_context = (
-                        "[TAG ALVO NÃO ENCONTRADA/VAZIA NO CONTEXTO DO FILTRO]"
-                    )
-                target_values_counter[target_value_found_in_context] += 1
-
-            fatura_element.clear()
-            while fatura_element.getprevious() is not None:
-                del fatura_element.getparent()[0]
+            ancestor_elem.clear()
+            while ancestor_elem.getprevious() is not None:
+                del ancestor_elem.getparent()[0]
         return target_values_counter
     except etree.XMLSyntaxError as e:
         print(f"Erro de sintaxe XML (extract_filtered_tag_data): {e}")
@@ -438,43 +425,6 @@ def consolidate_faturas_by_result(files, results, numero_lote):
         print("Nenhuma Fatura encontrada com a UF especificada.")
         empty_lote_xml = f'<?xml version="1.0" encoding="UTF-8"?>\n<loteNFCom NUMERO_LOTE="{numero_lote}" DATA_CRIACAO="{data_criacao}" QUANTIDADE_NFCOM_NO_LOTE="0"></loteNFCom>'
         return empty_lote_xml, 0
-
-
-def format_uf(value):
-    ufs = {
-        "11": "RO",
-        "12": "AC",
-        "16": "AP",
-        "28": "SE",
-        "29": "BA",
-        "31": "MG",
-        "32": "ES",
-        "33": "RJ",
-        "35": "SP",
-        "41": "PR",
-        "42": "SC",
-        "43": "RS",
-        "50": "MS",
-        "51": "MT",
-        "52": "GO",
-        "53": "DF",
-        "13": "AM",
-        "14": "RR",
-        "15": "PA",
-        "17": "TO",
-        "21": "MA",
-        "22": "PI",
-        "23": "CE",
-        "24": "RN",
-        "25": "PB",
-        "26": "PE",
-        "27": "AL",
-    }
-
-    if value in ufs:
-        return ufs[value]
-
-    return ""
 
 
 # --- Bloco de Testes (pode ser expandido) ---

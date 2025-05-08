@@ -1,0 +1,51 @@
+
+    <documento>
+        <infNFCom id="1">
+            <ide>
+                <nNF>1001</nNF>
+            </ide>
+            <dest>
+                <xNome>CLUBE DE CAMPO MOEMA</xNome>
+                <enderDest>
+                    <UF>SP</UF>
+                </enderDest>
+            </dest>
+            <outro>
+                <xNome>NAO FILTRAR ESTE</xNome>
+            </outro>
+        </infNFCom>
+        <infNFCom id="2">
+            <ide>
+                <nNF>1002</nNF>
+            </ide>
+            <dest>
+                <xNome>OUTRO CLIENTE</xNome>
+                <enderDest>
+                    <UF>RJ</UF>
+                </enderDest>
+            </dest>
+        </infNFCom>
+        <infNFCom id="3">
+            <ide>
+                <nNF>1003</nNF>
+            </ide>
+            <dest>
+                 <!-- xNome ausente aqui -->
+                <enderDest>
+                    <UF>SP</UF>
+                </enderDest>
+            </dest>
+        </infNFCom>
+         <infNFCom id="4">
+            <ide>
+                <nNF>1004</nNF>
+            </ide>
+            <dest>
+                <xNome>CLUBE DE CAMPO MOEMA</xNome> <!-- Outro para o mesmo cliente -->
+                <enderDest>
+                    <UF>MG</UF>
+                </enderDest>
+            </dest>
+        </infNFCom>
+    </documento>
+    
