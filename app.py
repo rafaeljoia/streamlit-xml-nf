@@ -8,7 +8,6 @@ from xml_parser import (
     consolidate_faturas_by_result,
     format_uf,
     process_files,
-    consolidate_faturas_by_uf,
 )
 
 
@@ -42,17 +41,15 @@ def page_extract_tags():
     """
     )
 
-    # --- Upload de Arquivos ---
     st.header("1. Carregue seus arquivos XML")
     uploaded_files = st.file_uploader(
         "Selecione um ou mais arquivos XML para extração",
         type=["xml"],
         accept_multiple_files=True,
-        key="uploader_extracao",  # Chave única para este uploader
+        key="uploader_extracao",
         help="Você pode selecionar múltiplos arquivos.",
     )
 
-    # --- Input da Tag Alvo ---
     st.header("2. Informe a Tag de Busca")
     tag_name = st.text_input(
         "Nome da Tag de Busca",
@@ -61,7 +58,6 @@ def page_extract_tags():
         help="Digite o nome exato da tag XML cujo valor você deseja extrair (sem < >).",
     )
 
-    # --- Filtro Opcional ---
     st.header("3. Filtro (Opcional)")
     st.markdown(
         "Preencha os campos abaixo *apenas* se desejar extrair a Tag de Busca condicionalmente. Caso contrário, a busca será ampla em todos os nós do XML."
@@ -103,7 +99,6 @@ def page_extract_tags():
         "🔄 Limpar Filtros", on_click=limpar_campos, type="secondary", key="btn_limpar"
     )
 
-    # --- Botão de Processamento e Resultados ---
     st.header("4. Processamento")
     if st.button("Extrair Dados", type="primary", key="btn_extracao"):
         if not uploaded_files:
@@ -122,7 +117,6 @@ def page_extract_tags():
                 filter_info_parts.append(
                     f"Caminho Filtro: `{filter_parent_path_input}`"
                 )
-            # filter_parent_path_input = None
 
             if filter_value:
                 filter_info_parts.append(f"Valor Filtro: `{filter_value}`")
@@ -146,7 +140,6 @@ def page_extract_tags():
                     ),  # Passa o novo campo
                 )
 
-            # Armazena em seçãos de estado para persistência
             st.session_state["results_list"] = results_list
             st.session_state["uploaded_files"] = uploaded_files
             st.session_state["tag_name"] = tag_name
@@ -158,7 +151,6 @@ def page_extract_tags():
                 if tag_name == "cUF":
                     df_results["Valor"] = df_results["Valor"].apply(format_uf)
 
-                # Reordenar colunas para melhor visualização, garantindo que todas as chaves existam
                 cols_to_show = [
                     "Nome do Arquivo",
                     "TAG",
@@ -172,9 +164,7 @@ def page_extract_tags():
                     if col in df_results.columns:
                         df_results_display[col] = df_results[col]
                     else:
-                        df_results_display[col] = (
-                            None  # ou pd.NA ou outra forma de lidar com colunas ausentes
-                        )
+                        df_results_display[col] = None
 
                 df_results_display.index = df_results_display.index + 1
                 st.dataframe(df_results_display, use_container_width=True)
