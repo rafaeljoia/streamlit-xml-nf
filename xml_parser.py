@@ -307,6 +307,9 @@ def consolidate_faturas_by_result(files, results, numero_lote):
 
 
 def format_uf(value):
+    """
+    Formatador de UF, com base no código
+    """
     ufs = {
         "11": "RO",
         "12": "AC",
