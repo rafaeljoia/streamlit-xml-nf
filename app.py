@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Aplicação Streamlit com múltiplas páginas para processamento de XML:
-1. Extrair Tags (com filtro opcional)
-2. Consolidar Faturas por UF
-"""
-
+import io
+import datetime
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
@@ -12,9 +9,8 @@ from xml_parser import (
     format_uf,
     process_files,
     consolidate_faturas_by_uf,
-)  # Importa ambas as funções
-import io
-import datetime
+)
+
 
 st.set_page_config(
     layout="wide", page_title="Buscador XML Fiscal", page_icon="🔍", menu_items={}
@@ -185,7 +181,6 @@ def page_extract_tags():
 
                 total_ocorrencia = df_results["Ocorrência"].sum()
 
-                # Exibir total no final com destaque
                 st.markdown(f"**TOTAL de Ocorrências: {total_ocorrencia}**")
 
                 st.subheader("Download dos Resultados")
@@ -193,9 +188,7 @@ def page_extract_tags():
                 @st.cache_data
                 def convert_df_to_csv(df_to_convert):
                     output = io.StringIO()
-                    df_to_convert.to_csv(
-                        output, index=False, encoding="utf-8-sig"
-                    )  # utf-8-sig para melhor compatibilidade com Excel
+                    df_to_convert.to_csv(output, index=False, encoding="utf-8-sig")
                     return output.getvalue()
 
                 @st.cache_data
@@ -270,122 +263,59 @@ def page_extract_tags():
                 st.warning("Nenhuma fatura encontrada para consolidação.")
 
 
-def page_consolidate_faturas():
-    st.title("📄 Ferramenta de Consolidação de Faturas por UF")
-    st.markdown(
-        """
-    Carregue um ou mais arquivos XML contendo blocos `<Fatura>`. A ferramenta irá encontrar
-    todas as Faturas onde a tag `<UF>` (dentro de um caminho comum como `<infNFCom><emit><enderEmit><UF>`) corresponda ao valor informado
-    e criará um novo arquivo XML `<loteNFCom>` contendo apenas essas faturas.
-    """
-    )
-
-    # --- Upload de Arquivos ---
-    st.header("1. Carregue os arquivos XML de origem")
-    uploaded_files_consolidacao = st.file_uploader(
-        "Selecione um ou mais arquivos XML para consolidação",
-        type=["xml"],
-        accept_multiple_files=True,
-        key="uploader_consolidacao",  # Chave única
-        help="Você pode selecionar múltiplos arquivos que contenham as Faturas.",
-    )
-
-    # --- Inputs para Consolidação ---
-    st.header("2. Informe os parâmetros para consolidação")
-    col1_cons, col2_cons = st.columns(2)
-    with col1_cons:
-        target_uf = st.text_input(
-            "UF para Filtrar",
-            placeholder="Ex: SP, MG, RJ",
-            key="uf_consolidacao",
-            help="Digite a sigla da UF (ex: SP) para incluir apenas as Faturas dessa UF.",
-        )
-    with col2_cons:
-        numero_lote = st.text_input(
-            "Número do Lote",
-            placeholder="Ex: 0000000430",
-            key="lote_consolidacao",
-            help="Digite o número que será usado no atributo NUMERO_LOTE do arquivo consolidado.",
-        )
-
-    # --- Botão de Processamento e Download ---
-    st.header("3. Gere o arquivo consolidado")
-    if st.button("Consolidar Faturas", type="primary", key="btn_consolidacao"):
-        if not uploaded_files_consolidacao:
-            st.error("Por favor, carregue pelo menos um arquivo XML de origem.")
-        elif not target_uf:
-            st.error("Por favor, informe a UF para filtrar as faturas.")
-        elif not numero_lote:
-            st.error("Por favor, informe o Número do Lote para o arquivo consolidado.")
-        else:
-            with st.spinner(f"Processando arquivos... Isso pode levar alguns minutos."):
-                consolidated_xml_str, fatura_count = consolidate_faturas_by_uf(
-                    files=uploaded_files_consolidacao,
-                    target_uf=target_uf.upper(),  # Garante que a UF seja maiúscula para comparação
-                    numero_lote=numero_lote,
-                )
-
-            if consolidated_xml_str and fatura_count > 0:
-                st.success(
-                    f"Consolidação concluída! {fatura_count} fatura(s) da UF '{target_uf}' foram encontradas e agrupadas."
-                )
-
-                st.subheader("Download do Arquivo Consolidado")
-                st.download_button(
-                    label=f"Baixar lote_{numero_lote}_{target_uf}.xml",
-                    data=consolidated_xml_str.encode(
-                        "utf-8"
-                    ),  # Garante encoding para download
-                    file_name=f"lote_{numero_lote}_{target_uf}.xml",
-                    mime="application/xml",
-                    key="download_xml_consolidado",
-                )
-
-                with st.expander("Prévia do XML Consolidado (início)"):
-                    st.code(
-                        consolidated_xml_str[:3000]
-                        + ("..." if len(consolidated_xml_str) > 3000 else ""),
-                        language="xml",
-                    )
-
-            elif (
-                fatura_count == 0 and consolidated_xml_str
-            ):  # Caso de lote vazio retornado
-                st.warning(
-                    f"Nenhuma fatura encontrada para a UF '{target_uf}' nos arquivos fornecidos. Um lote vazio foi gerado."
-                )
-                st.subheader("Download do Arquivo Consolidado (Vazio)")
-                st.download_button(
-                    label=f"Baixar lote_{numero_lote}_{target_uf}_vazio.xml",
-                    data=consolidated_xml_str.encode("utf-8"),
-                    file_name=f"lote_{numero_lote}_{target_uf}_vazio.xml",
-                    mime="application/xml",
-                    key="download_xml_consolidado_vazio",
-                )
-                with st.expander("Prévia do XML Consolidado (Vazio)"):
-                    st.code(
-                        consolidated_xml_str[:3000]
-                        + ("..." if len(consolidated_xml_str) > 3000 else ""),
-                        language="xml",
-                    )
-            else:  # Erro ou nenhuma fatura e nenhum XML de lote vazio
-                st.error(
-                    "Ocorreu um erro durante a consolidação ou nenhuma fatura foi encontrada. Verifique os logs do console ou os arquivos de entrada."
-                )
-
-
 def page_guide():
-    st.title("📝Guia de Uso")
-    st.markdown("#### - Obter a quantidade de UF presentes nos arquivos")
+    st.title("Guia de Uso")
+    st.markdown("#### - Processo de Filtragem Comum")
     st.markdown(
         "Utilize o filtro `cUF` para obter a quantidade de UFs presentes nos arquivos XML."
     )
     st.markdown("Exemplo:")
 
-    st.image("img/filtro_cUF.jpg", caption="Filtro cUF")
+    st.image(
+        "img/filtro_cUF.jpg",
+        caption="**Filtro cUF** – representa o código da UF extraído dos XMLs",
+    )
+
+    st.markdown("---")
+    st.markdown(
+        "Utilize o filtro `codigo_filial` para obter a quantidade de Filiais presentes nos arquivos XML."
+    )
+    st.markdown("Exemplo:")
+
+    st.image(
+        "img/filtro_codigo_filial.jpg",
+        caption="**Filtro codigo_filial** – representa o codigo_filial extraído dos XMLs",
+    )
+
+    st.markdown("#### - Processo de Filtragem Avançada")
+
+    st.markdown(
+        "Utilize o filtro `nNF` para obter as NFs de determinado estado (UF),"
+        "para isso, informe os filtros opcionais conforme figura abaixo."
+    )
+
+    st.markdown("Exemplo:")
+
+    st.image(
+        "img/filtro_nNF_UF.jpg",
+        caption="**Filtro nNF** – representa notas filtradas por UF extraídas dos XMLs",
+    )
+
+    st.markdown("#### - Geração de Consolidado XML")
+    st.markdown(
+        "O botão de Consolidar Faturas, só estará disponível quando"
+        "a opção do filtro for pela Nota Fiscal - tag nNF`."
+        "Ao clicar no botão, será gerado um arquivo XML com as notas fiscais indicadas na tabela de resultados."
+    )
+
+    st.markdown("Exemplo:")
+
+    st.image(
+        "img/extracao_consolidado.jpg",
+        caption="**Filtro nNF** – Export de XML das NFs",
+    )
 
 
-# --- Navegação Principal (Sidebar) ---
 with st.sidebar:
     selected = option_menu(
         "Menu",
@@ -396,12 +326,8 @@ with st.sidebar:
     )
 
 st.sidebar.markdown("--- ")
-# st.sidebar.caption("Desenvolvido com Python e Streamlit.")
 
-# --- Executa a página selecionada ---
 if selected == "Buscar Tags":
     page_extract_tags()
 elif selected == "Guia de Uso":
     page_guide()
-# elif page == "Consolidar Faturas por UF":
-# page_consolidate_faturas()
